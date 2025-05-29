@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quiz Arena</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      min-height: 100vh;
+      margin: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      transition: background 0.4s;
+    }
+    body.dark {
+      background: linear-gradient(135deg, #232526, #414345);
+      color: #eee;
+    }
+    .quiz-container {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+      width: 100%;
+      max-width: 420px;
+      padding: 32px 24px 24px 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      position: relative;
+      transition: background 0.4s, color 0.4s;
+    }
+    body.dark .quiz-container {
+      background: #232526;
+      color: #eee;
+    }
+    .hidden { display: none !important; }
+    .progress-bar {
+      height: 8px;
+      background: #e0e7ff;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-bottom: 24px;
+    }
+    .progress {
+      height: 100%;
+      background: linear-gradient(90deg, #667eea, #764ba2);
+      width: 0%;
+      transition: width 0.3s;
+    }
+    .quiz-header {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 12px;
+      color: #4f46e5;
+      text-align: center;
+      letter-spacing: 1px;
+    }
+    body.dark .quiz-header { color: #a5b4fc; }
+    .question {
+      font-size: 1.1rem;
+      margin-bottom: 18px;
+      color: #333;
+      min-height: 48px;
+      transition: color 0.4s;
+    }
+    body.dark .question { color: #eee; }
+    .options {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+    .option-btn {
+      padding: 12px;
+      border: 2px solid #e0e7ff;
+      border-radius: 8px;
+      background: #f3f4f6;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.2s, border 0.2s, color 0.2s;
+      text-align: left;
+    }
+    .option-btn.correct {
+      background: #d1fae5;
+      border-color: #10b981;
+      color: #065f46;
+    }
+    .option-btn.wrong {
+      background: #fee2e2;
+      border-color: #ef4444;
+      color: #991b1b;
+    }
+    .option-btn:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+    }
+    .score-timer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 18px;
+      font-size: 1rem;
+      color: #6366f1;
+    }
+    .timer {
+      font-weight: bold;
+      color: #ef4444;
+      transition: color 0.2s;
+    }
+    .timer.low { color: #f59e42; }
+    .next-btn, .restart-btn, .logout-btn, .hint-btn, .dark-btn {
+      padding: 12px;
+      background: linear-gradient(90deg, #667eea, #764ba2);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 8px;
+      transition: background 0.2s;
+    }
+    .next-btn:disabled, .hint-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    .leaderboard {
+      margin-top: 24px;
+      background: #f3f4f6;
+      border-radius: 8px;
+      padding: 16px;
+    }
+    body.dark .leaderboard { background: #232526; }
+    .leaderboard h3 {
+      margin: 0 0 8px 0;
+      font-size: 1.1rem;
+      color: #4f46e5;
+    }
+    body.dark .leaderboard h3 { color: #a5b4fc; }
+    .leaderboard-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .leaderboard-list li {
+      font-size: 0.98rem;
+      margin-bottom: 4px;
+      color: #333;
+    }
+    body.dark .leaderboard-list li { color: #eee; }
+    .category-list {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      margin: 24px 0;
+    }
+    .category-btn {
+      padding: 14px;
+      border-radius: 8px;
+      border: 2px solid #e0e7ff;
+      background: #f3f4f6;
+      font-size: 1.1rem;
+      font-weight: 500;
+      color: #4f46e5;
+      cursor: pointer;
+      transition: background 0.2s, border 0.2s;
+    }
+    .category-btn:hover {
+      background: #e0e7ff;
+      border-color: #667eea;
+    }
+    .badge-row {
+      display: flex;
+      gap: 8px;
+      margin: 8px 0 0 0;
+      justify-content: center;
+    }
+    .badge {
+      font-size: 1.4rem;
+      border-radius: 50%;
+      background: #e0e7ff;
+      padding: 4px 10px;
+      border: 2px solid #667eea;
+      margin-right: 2px;
+      display: inline-block;
+    }
+    .badge.earned {
+      background: #d1fae5;
+      border-color: #10b981;
+    }
+    .login-form {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      margin: 32px 0;
+      align-items: stretch;
+    }
+    .login-form input {
+      padding: 12px;
+      border-radius: 8px;
+      border: 1.5px solid #e0e7ff;
+      font-size: 1rem;
+    }
+    .login-form button {
+      padding: 12px;
+      border-radius: 8px;
+      border: none;
+      background: linear-gradient(90deg, #667eea, #764ba2);
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .greeting {
+      text-align: center;
+      font-size: 1.1rem;
+      color: #6366f1;
+      margin-bottom: 12px;
+    }
+    .logout-btn {
+      background: #ef4444;
+      margin-bottom: 8px;
+    }
+    .hint-btn {
+      background: #10b981;
+      margin-left: 0;
+      margin-top: 0;
+      margin-bottom: 8px;
+    }
+    .dark-btn {
+      background: #232526;
+      color: #fff;
+      margin-bottom: 8px;
+      margin-top: 0;
+      font-size: 0.95rem;
+      padding: 8px 10px;
+      align-self: flex-end;
+    }
+    .mini-game {
+      margin: 18px 0 0 0;
+      padding: 16px;
+      background: #f3f4f6;
+      border-radius: 8px;
+      text-align: center;
+      color: #4f46e5;
+    }
+    body.dark .mini-game { background: #232526; color: #a5b4fc; }
+    .confetti {
+      pointer-events: none;
+      position: fixed;
+      left: 0; top: 0; width: 100vw; height: 100vh;
+      z-index: 9999;
+      overflow: hidden;
+    }
+    @media (max-width: 500px) {
+      .quiz-container {
+        padding: 18px 6px 12px 6px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="quiz-container">
+    <button class="dark-btn" id="dark-btn">🌙 Dark Mode</button>
+    <!-- Login Form -->
+    <form id="login-form" class="login-form">
+      <h2 style="text-align:center;color:#4f46e5;">Welcome to Quiz Arena</h2>
+      <input type="text" id="username" placeholder="Enter your username" autocomplete="off" required />
+      <button type="submit">Login</button>
+    </form>
+
+    <!-- Category Selection -->
+    <div id="category-select" class="hidden">
+      <div class="greeting" id="greeting"></div>
+      <h2 style="text-align:center;color:#4f46e5;">Choose a Category</h2>
+      <div class="badge-row" id="badge-row"></div>
+      <div class="category-list">
+        <button class="category-btn" data-cat="science">🔬 Science</button>
+        <button class="category-btn" data-cat="life">🌱 Life</button>
+        <button class="category-btn" data-cat="animals">🐾 Animals</button>
+        <button class="category-btn" data-cat="sports">🏅 Sports</button>
+      </div>
+      <button class="logout-btn" id="logout-btn">Logout</button>
+    </div>
+
+    <!-- Quiz Game -->
+    <div id="quiz-game" class="hidden">
+      <div class="progress-bar"><div class="progress" id="progress"></div></div>
+      <div class="quiz-header" id="quiz-header">Quiz Challenge</div>
+      <div class="score-timer">
+        <span>Score: <span id="score">0</span></span>
+        <span>Time: <span class="timer" id="timer">15</span>s</span>
+      </div>
+      <button class="hint-btn" id="hint-btn">💡 Hint</button>
+      <div class="question" id="question"></div>
+      <div class="options" id="options"></div>
+      <button class="next-btn" id="next" disabled>Next</button>
+    </div>
+
+    <!-- Leaderboard -->
+    <div class="leaderboard hidden" id="leaderboard">
+      <h3>🏆 Leaderboard (<span id="lb-cat"></span>)</h3>
+      <ol class="leaderboard-list" id="leaderboard-list"></ol>
+      <button class="restart-btn" id="restart">Restart Quiz</button>
+      <button class="logout-btn" id="logout-btn2">Logout</button>
+      <div id="mini-game-area"></div>
+    </div>
+  </div>
+  <canvas class="confetti hidden" id="confetti"></canvas>
+  <audio id="audio-correct" src="https://cdn.pixabay.com/audio/2022/07/26/audio_124bfae7e5.mp3"></audio>
+  <audio id="audio-wrong" src="https://cdn.pixabay.com/audio/2022/07/26/audio_124bfae7e5.mp3"></audio>
+  <audio id="audio-tick" src="https://cdn.pixabay.com/audio/2022/03/15/audio_115b9e8e2e.mp3"></audio>
+  <script>
+    // --- Quiz Data ---
+    const quizzes = {
+      science: [
+        { q: "What planet is known as the Red Planet?", options: ["Earth", "Mars", "Jupiter", "Venus"], answer: 1 },
+        { q: "What is H2O commonly known as?", options: ["Oxygen", "Hydrogen", "Water", "Salt"], answer: 2 },
+        { q: "What gas do plants absorb from the atmosphere?", options: ["Oxygen", "Nitrogen", "Carbon Dioxide", "Helium"], answer: 2 },
+        { q: "What is the speed of light?", options: ["300,000 km/s", "150,000 km/s", "1,000 km/s", "3,000 km/s"], answer: 0 },
+        { q: "Who developed the theory of relativity?", options: ["Newton", "Einstein", "Tesla", "Curie"], answer: 1 }
+      ],
+      life: [
+        { q: "What is the largest organ in the human body?", options: ["Heart", "Skin", "Liver", "Lungs"], answer: 1 },
+        { q: "How many bones are in the adult human body?", options: ["206", "201", "210", "205"], answer: 0 },
+        { q: "What vitamin do we get from sunlight?", options: ["A", "B", "C", "D"], answer: 3 },
+        { q: "Which sense is most closely linked to memory?", options: ["Sight", "Smell", "Touch", "Taste"], answer: 1 },
+        { q: "What is the normal human body temperature (°C)?", options: ["36.5", "37", "38", "39"], answer: 1 }
+      ],
+      animals: [
+        { q: "What is the fastest land animal?", options: ["Lion", "Cheetah", "Horse", "Tiger"], answer: 1 },
+        { q: "Which animal is known as the King of the Jungle?", options: ["Elephant", "Tiger", "Lion", "Bear"], answer: 2 },
+        { q: "How many legs does a spider have?", options: ["6", "8", "10", "12"], answer: 1 },
+        { q: "What do pandas eat?", options: ["Fish", "Bamboo", "Grass", "Fruits"], answer: 1 },
+        { q: "Which bird is a universal symbol of peace?", options: ["Eagle", "Dove", "Crow", "Sparrow"], answer: 1 }
+      ],
+      sports: [
+        { q: "How many players are on a football (soccer) team?", options: ["9", "10", "11", "12"], answer: 2 },
+        { q: "Which country hosted the 2016 Summer Olympics?", options: ["China", "Brazil", "UK", "Russia"], answer: 1 },
+        { q: "What sport uses a puck?", options: ["Basketball", "Hockey", "Tennis", "Golf"], answer: 1 },
+        { q: "Who is known as the fastest man in the world?", options: ["Bolt", "Phelps", "Messi", "Ronaldo"], answer: 0 },
+        { q: "How many rings are on the Olympic flag?", options: ["4", "5", "6", "7"], answer: 1 }
+      ]
+    };
+
+    // --- Mini Games Data ---
+    const miniGames = {
+      science: [
+        { type: "truefalse", q: "The sun is a star. (True/False)", answer: "True" },
+        { type: "math", q: "What is 12 x 8?", answer: "96" }
+      ],
+      life: [
+        { type: "truefalse", q: "Humans have five senses. (True/False)", answer: "True" },
+        { type: "oddone", q: "Odd one out: Apple, Banana, Carrot, Mango", answer: "Carrot" }
+      ],
+      animals: [
+        { type: "truefalse", q: "A whale is a mammal. (True/False)", answer: "True" },
+        { type: "oddone", q: "Odd one out: Cat, Dog, Lion, Eagle", answer: "Eagle" }
+      ],
+      sports: [
+        { type: "math", q: "How many minutes in a football match (regular time)?", answer: "90" },
+        { type: "truefalse", q: "Basketball uses a round ball. (True/False)", answer: "True" }
+      ]
+    };
+
+    // --- State ---
+    let username = "";
+    let current = 0;
+    let score = 0;
+    let timer = 15;
+    let timerInterval = null;
+    let canAnswer = true;
+    let selectedCategory = "";
+    let leaderboard = {};
+    let badges = {};
+    let hintUsed = false;
+
+    // --- Elements ---
+    const loginForm = document.getElementById('login-form');
+    const usernameInput = document.getElementById('username');
+    const categorySelect = document.getElementById('category-select');
+    const greetingEl = document.getElementById('greeting');
+    const quizGame = document.getElementById('quiz-game');
+    const questionEl = document.getElementById('question');
+    const optionsEl = document.getElementById('options');
+    const scoreEl = document.getElementById('score');
+    const timerEl = document.getElementById('timer');
+    const nextBtn = document.getElementById('next');
+    const progressEl = document.getElementById('progress');
+    const quizHeader = document.getElementById('quiz-header');
+    const leaderboardEl = document.getElementById('leaderboard');
+    const leaderboardList = document.getElementById('leaderboard-list');
+    const restartBtn = document.getElementById('restart');
+    const logoutBtn = document.getElementById('logout-btn');
+    const logoutBtn2 = document.getElementById('logout-btn2');
+    const lbCat = document.getElementById('lb-cat');
+    const badgeRow = document.getElementById('badge-row');
+    const hintBtn = document.getElementById('hint-btn');
+    const darkBtn = document.getElementById('dark-btn');
+    const miniGameArea = document.getElementById('mini-game-area');
+    const confettiCanvas = document.getElementById('confetti');
+    const audioCorrect = document.getElementById('audio-correct');
+    const audioWrong = document.getElementById('audio-wrong');
+    const audioTick = document.getElementById('audio-tick');
+
+    // --- Utility ---
+    function saveLeaderboard() {
+      localStorage.setItem('quiz_leaderboard_v2', JSON.stringify(leaderboard));
+    }
+    function loadLeaderboard() {
+      leaderboard = JSON.parse(localStorage.getItem('quiz_leaderboard_v2') || "{}");
+    }
+    function saveBadges() {
+      localStorage.setItem('quiz_badges', JSON.stringify(badges));
+    }
+    function loadBadges() {
+      badges = JSON.parse(localStorage.getItem('quiz_badges') || "{}");
+    }
+    loadLeaderboard();
+    loadBadges();
+
+    // --- Dark Mode ---
+    darkBtn.onclick = () => {
+      document.body.classList.toggle('dark');
+      darkBtn.textContent = document.body.classList.contains('dark') ? "☀️ Light Mode" : "🌙 Dark Mode";
+    };
+
+    // --- Login ---
+    loginForm.onsubmit = e => {
+      e.preventDefault();
+      username = usernameInput.value.trim();
+      if (!username) return;
+      loginForm.classList.add('hidden');
+      greetingEl.textContent = `Hello, ${username}! Ready to test your knowledge?`;
+      categorySelect.classList.remove('hidden');
+      showBadges();
+    };
+
+    // --- Logout ---
+    function logout() {
+      username = "";
+      selectedCategory = "";
+      loginForm.reset();
+      loginForm.classList.remove('hidden');
+      categorySelect.classList.add('hidden');
+      quizGame.classList.add('hidden');
+      leaderboardEl.classList.add('hidden');
+      miniGameArea.innerHTML = '';
+    }
+    logoutBtn.onclick = logout;
+    logoutBtn2.onclick = logout;
+
+    // --- Category Badges ---
+    function showBadges() {
+      badgeRow.innerHTML = '';
+      ["science", "life", "animals", "sports"].forEach(cat => {
+        const badge = document.createElement('span');
+        badge.className = 'badge' + (badges[cat] ? ' earned' : '');
+        badge.textContent = {
+          science: "🔬",
+          life: "🌱",
+          animals: "🐾",
+          sports: "🏅"
+        }[cat];
+        badge.title = badges[cat] ? `Completed: ${capitalize(cat)}` : `Not completed: ${capitalize(cat)}`;
+        badgeRow.appendChild(badge);
+      });
+    }
+
+    // --- Category Selection ---
+    categorySelect.querySelectorAll('.category-btn').forEach(btn => {
+      btn.onclick = () => {
+        selectedCategory = btn.getAttribute('data-cat');
+        startQuiz();
+        categorySelect.classList.add('hidden');
+        quizGame.classList.remove('hidden');
+      };
+    });
+
+    // --- Quiz Functions ---
+    function startQuiz() {
+      current = 0;
+      score = 0;
+      scoreEl.textContent = score;
+      quizHeader.textContent = `${capitalize(selectedCategory)} Quiz`;
+      nextBtn.style.display = '';
+      nextBtn.disabled = true;
+      leaderboardEl.classList.add('hidden');
+      hintBtn.disabled = false;
+      hintBtn.textContent = "💡 Hint";
+      hintUsed = false;
+      showQuestion();
+      updateProgress();
+    }
+
+    function showQuestion() {
+      canAnswer = true;
+      timer = 15;
+      timerEl.textContent = timer;
+      timerEl.classList.remove('low');
+      const quiz = quizzes[selectedCategory];
+      questionEl.textContent = quiz[current].q;
+      optionsEl.innerHTML = '';
+      quiz[current].options.forEach((opt, idx) => {
+        const btn = document.createElement('button');
+        btn.className = 'option-btn';
+        btn.textContent = opt;
+        btn.onclick = () => selectOption(idx, btn);
+        btn.disabled = false;
+        optionsEl.appendChild(btn);
+      });
+      nextBtn.disabled = true;
+      startTimer();
+    }
+
+    function selectOption(idx, btn) {
+      if (!canAnswer) return;
+      canAnswer = false;
+      stopTimer();
+      const quiz = quizzes[selectedCategory];
+      const correct = quiz[current].answer;
+      const optionBtns = document.querySelectorAll('.option-btn');
+      optionBtns.forEach((b, i) => {
+        b.disabled = true;
+        if (i === correct) b.classList.add('correct');
+        if (i === idx && i !== correct) b.classList.add('wrong');
+      });
+      if (idx === correct) {
+        score += 10 + timer; // Bonus for speed
+        scoreEl.textContent = score;
+        playSound(audioCorrect);
+      } else {
+        playSound(audioWrong);
+      }
+      nextBtn.disabled = false;
+    }
+
+    function startTimer() {
+      stopTimer();
+      timerInterval = setInterval(() => {
+        timer--;
+        timerEl.textContent = timer;
+        if (timer <= 5) timerEl.classList.add('low');
+        playSound(audioTick, 0.1);
+        if (timer <= 0) {
+          stopTimer();
+          selectOption(-1, null); // Time out, no answer
+        }
+      }, 1000);
+    }
+
+    function stopTimer() {
+      if (timerInterval) clearInterval(timerInterval);
+      timerInterval = null;
+    }
+
+    function updateProgress() {
+      const quiz = quizzes[selectedCategory];
+      progressEl.style.width = ((current) / quiz.length * 100) + "%";
+    }
+
+    nextBtn.onclick = () => {
+      const quiz = quizzes[selectedCategory];
+      current++;
+      updateProgress();
+      if (current < quiz.length) {
+        showQuestion();
+      } else {
+        endQuiz();
+      }
+    };
+
+    // --- Hint Feature ---
+    hintBtn.onclick = () => {
+      if (hintUsed) return;
+      hintUsed = true;
+      hintBtn.disabled = true;
+      hintBtn.textContent = "Hint used";
+      const quiz = quizzes[selectedCategory];
+      const correct = quiz[current].answer;
+      let removed = 0;
+      // Remove two wrong options
+      const btns = Array.from(document.querySelectorAll('.option-btn'));
+      for (let i = 0; i < btns.length && removed < 2; i++) {
+        if (i !== correct && Math.random() > 0.5) {
+          btns[i].disabled = true;
+          btns[i].style.opacity = 0.4;
+          removed++;
+        }
+      }
+      // If not enough removed, remove from start
+      for (let i = 0; i < btns.length && removed < 2; i++) {
+        if (i !== correct && !btns[i].disabled) {
+          btns[i].disabled = true;
+          btns[i].style.opacity = 0.4;
+          removed++;
+        }
+      }
+    };
+
+    function endQuiz() {
+      stopTimer();
+      progressEl.style.width = "100%";
+      questionEl.textContent = `Quiz Over! Your score: ${score}`;
+      optionsEl.innerHTML = '';
+      nextBtn.style.display = 'none';
+      quizHeader.textContent = `Well Done, ${username}!`;
+      updateLeaderboard(score);
+      showLeaderboard();
+      // Confetti for high score
+      if (score >= 60) showConfetti();
+      // Earn badge
+      badges[selectedCategory] = true;
+      saveBadges();
+      showBadges();
+      // Mini-game
+      setTimeout(() => showMiniGame(selectedCategory), 800);
+    }
+
+    function updateLeaderboard(newScore) {
+      if (!leaderboard[selectedCategory]) leaderboard[selectedCategory] = [];
+      leaderboard[selectedCategory].push({ name: username, score: newScore });
+      leaderboard[selectedCategory].sort((a, b) => b.score - a.score);
+      leaderboard[selectedCategory] = leaderboard[selectedCategory].slice(0, 5); // Top 5
+      saveLeaderboard();
+    }
+
+    function showLeaderboard() {
+      leaderboardEl.classList.remove('hidden');
+      lbCat.textContent = capitalize(selectedCategory);
+      leaderboardList.innerHTML = '';
+      (leaderboard[selectedCategory] || []).forEach((entry, idx) => {
+        const li = document.createElement('li');
+        li.textContent = `${idx + 1}. ${entry.name} — ${entry.score} pts`;
+        leaderboardList.appendChild(li);
+      });
+      quizGame.classList.add('hidden');
+    }
+
+    restartBtn.onclick = () => {
+      startQuiz();
+      leaderboardEl.classList.add('hidden');
+      quizGame.classList.remove('hidden');
+      miniGameArea.innerHTML = '';
+    };
+
+    function capitalize(str) {
+      return str.charAt(0).toUpperCase() + str.slice(1);
+    }
+
+    // --- Mini Games ---
+    function showMiniGame(category) {
+      miniGameArea.innerHTML = '';
+      const games = miniGames[category];
+      const game = games[Math.floor(Math.random() * games.length)];
+      if (!game) return;
+      let html = `<div class="mini-game"><b>Mini Game Bonus!</b><br><br>${game.q}<br>`;
+      if (game.type === "truefalse") {
+        html += `<button class="option-btn" id="mg-true">True</button>
+                 <button class="option-btn" id="mg-false">False</button>`;
+      } else if (game.type === "math" || game.type === "oddone") {
+        html += `<input id="mg-input" type="text" style="margin:10px 0;padding:8px;border-radius:6px;border:1px solid #ccc;font-size:1rem;" placeholder="Your answer" />
+                 <button class="option-btn" id="mg-submit">Submit</button>`;
+      }
+      html += `</div>`;
+      miniGameArea.innerHTML = html;
+
+      // Handler
+      if (game.type === "truefalse") {
+        document.getElementById('mg-true').onclick = () => miniGameCheck("True", game.answer);
+        document.getElementById('mg-false').onclick = () => miniGameCheck("False", game.answer);
+      } else {
+        document.getElementById('mg-submit').onclick = () => {
+          const val = document.getElementById('mg-input').value.trim();
+          miniGameCheck(val, game.answer);
+        };
+      }
+    }
+
+    function miniGameCheck(val, answer) {
+      let msg = "";
+      if (val.toLowerCase() === answer.toLowerCase()) {
+        msg = `<span style="color:#10b981;font-weight:600;">Correct! +10 bonus points!</span>`;
+        score += 10;
+        scoreEl.textContent = score;
+        playSound(audioCorrect);
+      } else {
+        msg = `<span style="color:#ef4444;font-weight:600;">Wrong! No bonus.</span>`;
+        playSound(audioWrong);
+      }
+      miniGameArea.innerHTML += `<div style="margin-top:10px;">${msg}</div>`;
+      setTimeout(() => {
+        miniGameArea.innerHTML = '';
+      }, 1800);
+    }
+
+    // --- Sound ---
+    function playSound(audio, volume=0.5) {
+      try {
+        audio.volume = volume;
+        audio.currentTime = 0;
+        audio.play();
+      } catch {}
+    }
+
+    // --- Confetti ---
+    function showConfetti() {
+      confettiCanvas.classList.remove('hidden');
+      const ctx = confettiCanvas.getContext('2d');
+      confettiCanvas.width = window.innerWidth;
+      confettiCanvas.height = window.innerHeight;
+      let pieces = [];
+      for (let i = 0; i < 120; i++) {
+        pieces.push({
+          x: Math.random() * confettiCanvas.width,
+          y: Math.random() * confettiCanvas.height - confettiCanvas.height,
+          r: Math.random() * 6 + 4,
+          c: `hsl(${Math.random()*360},90%,60%)`,
+          d: Math.random() * 2 + 1
+        });
+      }
+      let frame = 0;
+      function draw() {
+        ctx.clearRect(0,0,confettiCanvas.width,confettiCanvas.height);
+        for (let p of pieces) {
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.r, 0, 2*Math.PI);
+          ctx.fillStyle = p.c;
+          ctx.fill();
+          p.y += p.d + Math.sin(frame/10 + p.x/50);
+          if (p.y > confettiCanvas.height) p.y = -10;
+        }
+        frame++;
+        if (frame < 120) requestAnimationFrame(draw);
+        else confettiCanvas.classList.add('hidden');
+      }
+      draw();
+    }
+  </script>
+</body>
+</html>
